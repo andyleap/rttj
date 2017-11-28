@@ -96,9 +96,10 @@ func (s *Server) index(rw http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(rw,
 		`<html>
 <head>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
 </head>
 <body>	
-<div id="content"></div>
+<div id="content container"></div>
 <script id="template" type="go/template">
 %s
 </script>
