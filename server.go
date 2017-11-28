@@ -46,11 +46,11 @@ func (s *Server) Update(new interface{}) error {
 
 	for l1 := 0; l1 < len(s.chans); l1++ {
 		select {
-			case s.chans[l1]<-update:
-			default:
-				close(s.chans[l1])
-				s.chans[l1] = s.chans[len(s.chans)-1]
-				s.chans = s.chans[:len(s.chans)-1]
+		case s.chans[l1] <- update:
+		default:
+			close(s.chans[l1])
+			s.chans[l1] = s.chans[len(s.chans)-1]
+			s.chans = s.chans[:len(s.chans)-1]
 		}
 	}
 
@@ -99,7 +99,7 @@ func (s *Server) index(rw http.ResponseWriter, req *http.Request) {
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
 </head>
 <body>	
-<div id="content container"></div>
+<div id="content" class="container"></div>
 <script id="template" type="go/template">
 %s
 </script>

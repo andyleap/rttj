@@ -7,16 +7,17 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	_ "time" //so we can format times
 
+	"github.com/evanphx/json-patch"
 	"github.com/gopherjs/eventsource"
 	"github.com/gopherjs/gopherjs/js"
 	"honnef.co/go/js/console"
 	"honnef.co/go/js/dom"
-	"github.com/evanphx/json-patch"
 )
 
 func Action(name, label string) template.HTML {
-	return template.HTML(`<button type="button" data-name="`+name+`">`+label+`</button>`)
+	return template.HTML(`<button type="button" data-name="` + name + `">` + label + `</button>`)
 }
 
 func main() {
@@ -51,7 +52,7 @@ func main() {
 		var curJson interface{}
 
 		json.Unmarshal(curVal, &curJson)
-		
+
 		var tplBuf bytes.Buffer
 		err := tpl.Execute(&tplBuf, curJson)
 		if err != nil {

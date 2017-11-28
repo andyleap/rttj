@@ -12,4 +12,3 @@ import (
 func handler(a asset) http.Handler {
 	return a
 }
-
