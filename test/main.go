@@ -1,8 +1,8 @@
 package main
 
 import (
-	"time"
 	"math/rand"
+	"time"
 
 	"github.com/andyleap/rttj"
 )
@@ -15,9 +15,9 @@ Canceled {{.Cancels}} times
 `
 
 type tplData struct {
-	Servers int
+	Servers     int
 	ServerNames []string
-	Cancels int
+	Cancels     int
 }
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 	}
 
 	go func() {
-		for range time.NewTicker(5*time.Second).C {
+		for range time.NewTicker(5 * time.Second).C {
 			data.Servers = rand.Intn(100)
 			s.Update(data)
 		}
