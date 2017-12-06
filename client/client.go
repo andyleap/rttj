@@ -86,10 +86,10 @@ func ConnectES() {
 	es.AddEventListener("update", true, UpdateEvent)
 	missedTicks := 0
 
-	es.AddEventListener("tick", true, func (d *js.Object) {
+	es.AddEventListener("tick", true, func(d *js.Object) {
 		missedTicks = 0
 	})
-	
+
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
@@ -130,4 +130,3 @@ func UpdateEvent(d *js.Object) {
 		console.Log(err.Error())
 	}
 }
-
