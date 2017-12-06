@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/evanphx/json-patch"
 )
@@ -16,7 +17,12 @@ type Server struct {
 
 	mu    sync.Mutex
 	value []byte
-	chans []chan string
+	chans []chan event
+}
+
+type event struct {
+	name string
+	data string
 }
 
 func New(template string, value interface{}) (*Server, error) {
@@ -42,7 +48,10 @@ func (s *Server) Update(new interface{}) error {
 	if err != nil {
 		return err
 	}
-	update := base64.StdEncoding.EncodeToString(rawupdate)
+	update := event{
+		name: "update",
+		data: base64.StdEncoding.EncodeToString(rawupdate),
+	}
 
 	for l1 := 0; l1 < len(s.chans); l1++ {
 		select {
@@ -60,7 +69,9 @@ func (s *Server) Update(new interface{}) error {
 
 func (s *Server) events(rw http.ResponseWriter, req *http.Request) {
 	rw.Header().Set("Content-Type", "text/event-stream")
-	c := make(chan string, 1)
+	rw.Header().Set("Cache-Control", "no-cache")
+	rw.Header().Set("Connection", "keep-alive")
+	c := make(chan event, 5)
 	flusher := rw.(http.Flusher)
 	func() {
 		s.mu.Lock()
@@ -76,11 +87,22 @@ data: %s
 		flusher.Flush()
 	}()
 
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	go func() {
+		for t := range ticker.C {
+			c <- event{
+				name: "tick",
+				data: fmt.Sprint(t.Unix()),
+			}
+		}
+	}()
+
 	for update := range c {
-		fmt.Fprintf(rw, `event: update
+		fmt.Fprintf(rw, `event: %s
 data: %s
 
-`, update)
+`, update.name, update.data)
 		flusher.Flush()
 	}
 }

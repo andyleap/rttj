@@ -7,7 +7,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
-	_ "time" //so we can format times
+	"time"
 
 	"github.com/albrow/vdom"
 	"github.com/evanphx/json-patch"
@@ -51,46 +51,22 @@ func (v *View) Update(data interface{}) error {
 	return nil
 }
 
+var view *View
+var curData []byte
+
 func main() {
 	doc := dom.GetWindow().Document()
 	templateNode := doc.GetElementByID("template")
 	tpl := template.Must(template.New("main").Funcs(template.FuncMap{"action": Action}).Parse(templateNode.InnerHTML()))
 	contentNode := doc.GetElementByID("content")
-	curVal := []byte(``)
 
-	view := &View{
+	view = &View{
 		Tpl:  tpl,
 		Root: contentNode,
 		tree: &vdom.Tree{},
 	}
 
-	es := eventsource.New("/events")
-	es.AddEventListener("full", true, func(d *js.Object) {
-		inData := d.Get("data").String()
-		buf, _ := base64.StdEncoding.DecodeString(inData)
-		curVal = buf
-		var curJson interface{}
-		json.Unmarshal(buf, &curJson)
-
-		err := view.Update(curJson)
-		if err != nil {
-			console.Log(err.Error())
-		}
-	})
-
-	es.AddEventListener("update", true, func(d *js.Object) {
-		inData := d.Get("data").String()
-		buf, _ := base64.StdEncoding.DecodeString(inData)
-		curVal, _ = jsonpatch.MergePatch(curVal, buf)
-		var curJson interface{}
-
-		json.Unmarshal(curVal, &curJson)
-
-		err := view.Update(curJson)
-		if err != nil {
-			console.Log(err.Error())
-		}
-	})
+	ConnectES()
 
 	doc.AddEventListener("click", true, func(evt dom.Event) {
 		target := evt.Target()
@@ -103,3 +79,55 @@ func main() {
 		go http.PostForm("/action", vals)
 	})
 }
+
+func ConnectES() {
+	es := eventsource.New("/events")
+	es.AddEventListener("full", true, FullEvent)
+	es.AddEventListener("update", true, UpdateEvent)
+	missedTicks := 0
+
+	es.AddEventListener("tick", true, func (d *js.Object) {
+		missedTicks = 0
+	})
+	
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			missedTicks++
+			if missedTicks > 10 {
+				break
+			}
+		}
+		es.Close()
+		ConnectES()
+	}()
+}
+
+func FullEvent(d *js.Object) {
+	inData := d.Get("data").String()
+	buf, _ := base64.StdEncoding.DecodeString(inData)
+	curData = buf
+	var curJson interface{}
+	json.Unmarshal(buf, &curJson)
+
+	err := view.Update(curJson)
+	if err != nil {
+		console.Log(err.Error())
+	}
+}
+
+func UpdateEvent(d *js.Object) {
+	inData := d.Get("data").String()
+	buf, _ := base64.StdEncoding.DecodeString(inData)
+	curData, _ = jsonpatch.MergePatch(curData, buf)
+	var curJson interface{}
+
+	json.Unmarshal(curData, &curJson)
+
+	err := view.Update(curJson)
+	if err != nil {
+		console.Log(err.Error())
+	}
+}
+
